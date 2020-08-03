@@ -2,12 +2,20 @@ package com.huazi.community.controller;
 
 import com.huazi.community.dto.AccessTokenDTO;
 import com.huazi.community.dto.GitHubUser;
+import com.huazi.community.mapper.UserMapper;
+import com.huazi.community.model.User;
 import com.huazi.community.provider.GitHubProvider;
+import org.apache.ibatis.annotations.Mapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+
+import javax.servlet.http.HttpServletRequest;
+import java.util.UUID;
 
 /**
  * @Title: AuthorizeController
@@ -20,6 +28,19 @@ public class AuthorizeController {
     @Autowired
     private GitHubProvider gitHubProvider;
 
+    @Autowired
+    private UserMapper userMapper;
+
+    @Value("${client.id}")
+    private String clientId;
+
+    @Value("${client.secret}")
+    private String clientSecret;
+
+    @Value("${client.uri}")
+    private String clientUri;
+
+
     @GetMapping("/index")
     @ResponseBody
     public String index() {
@@ -28,19 +49,34 @@ public class AuthorizeController {
 
     @GetMapping("/callback")
     public String callback(@RequestParam(name = "code") String code,
-                           @RequestParam(name = "state")String state) {
+                           @RequestParam(name = "state")String state,
+                           HttpServletRequest request) {
         System.out.println("start");
         AccessTokenDTO accessTokenDTO = new AccessTokenDTO();
-        accessTokenDTO.setClient_id("262e6157d00426928801");
-        accessTokenDTO.setClient_secret("510211dd4d10601874de41835a94419ed991103e");
+        accessTokenDTO.setClient_id(clientId);
+        accessTokenDTO.setClient_secret(clientSecret);
         accessTokenDTO.setState(state);
-        accessTokenDTO.setRedirect_uri("http://localhost:8887/callback");
+        accessTokenDTO.setRedirect_uri(clientUri);
         accessTokenDTO.setCode(code);
 
         String accessToken = gitHubProvider.getAccessToken(accessTokenDTO);
-        GitHubUser user = gitHubProvider.getUser(accessToken);
-        System.out.println(user.getName());
-        System.out.println(user.toString());
-        return "index";
+        GitHubUser gitHubUser = gitHubProvider.getUser(accessToken);
+        System.out.println(gitHubUser.getName());
+
+        if (gitHubUser != null) {
+            User user = new User();
+            user.setToken(UUID.randomUUID().toString());
+            user.setName(gitHubUser.getName());
+            user.setAccountId(String.valueOf(gitHubUser.getId()));
+            user.setGmtCreate(System.currentTimeMillis());
+            user.setGmtModified(user.getGmtModified());
+             userMapper.insert(user);
+            // 登录成功
+            request.getSession().setAttribute("user", gitHubUser);
+            return "redirect:/";
+        } else {
+            // 登录失败
+            return "redirect:/";
+        }
     }
 }
