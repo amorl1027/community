@@ -45,6 +45,7 @@ public class IndexController {
             }
         }
 
+        System.out.println("this is a test");
         List<QuestionDto> questionDtoList = questionService.list();
         model.addAttribute("questions", questionDtoList);
         return "index";
