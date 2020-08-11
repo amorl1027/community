@@ -7,6 +7,8 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
+import java.util.List;
+
 /**
  * @Title: UserMapper
  * @Description: com.huazi.community.mapper
@@ -18,4 +20,6 @@ public interface QuestionMapper {
     @Insert("insert into \"Test\".question (title,description,gmt_create,gmt_modified,creator,tag)  values (#{title},#{description},#{gmtCreate},#{gmtModified},#{creator},#{tag})")
     void insert(Question question);
 
+    @Select("{select * from \"Test\".question}")
+    List<Question> list();
 }
